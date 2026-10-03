@@ -1,0 +1,6 @@
+# Keep the document package byte-identical across Windows and Linux checkouts.
+* text=auto eol=lf
+examples/scoped-document-viewer/** text eol=lf
+sdk/** text eol=lf
+*.utp binary
+*.png binary

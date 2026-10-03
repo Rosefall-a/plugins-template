@@ -1,0 +1,287 @@
+"""Validate package-level invariants that the host relies on before installation."""
+
+from __future__ import annotations
+
+import json
+import ast
+import re
+import sys
+import zipfile
+from pathlib import Path
+
+ROUTE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
+ROUTE_HANDLER = re.compile(r"^[A-Za-z_][A-Za-z0-9_.-]*(?::[A-Za-z_][A-Za-z0-9_]*)?$")
+ROUTE_SEGMENT = re.compile(r"^(?:[a-z0-9][a-z0-9._-]*|\{[a-z_][a-z0-9_]*\})$")
+ROUTE_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
+RESERVED_PLUGIN_ROUTE_ROOTS = {
+    "actions",
+    "changelog",
+    "capabilities",
+    "disable",
+    "enable",
+    "frontend",
+    "logs",
+    "native-frontend",
+    "permissions",
+    "retry",
+    "secrets",
+    "settings",
+    "ui",
+    "update",
+}
+
+
+def validate_package(path: Path, *, full: bool = False) -> None:
+    with zipfile.ZipFile(path) as archive:
+        manifest = json.loads(archive.read("manifest.json"))
+        payload_names = {
+            name.removeprefix("payload/")
+            for name in archive.namelist()
+            if name.startswith("payload/") and not name.endswith("/")
+        }
+        files = {name: archive.read("payload/" + name) for name in payload_names}
+        names = archive.namelist()
+        if len(names) != len(set(names)) or any(
+            "\\" in name or name.startswith("/") or any(part in {"", ".", ".."} or ":" in part for part in name.rstrip("/").split("/"))
+            for name in names
+        ):
+            raise ValueError(f"{path.name}: duplicate or unsafe archive paths")
+
+    capabilities = {
+        (item.get("name"), item.get("version"))
+        for item in manifest.get("capabilities", [])
+        if isinstance(item, dict)
+    }
+    for permission in manifest.get("permissions", []):
+        if not isinstance(permission, dict):
+            raise ValueError(f"{path.name}: permission declaration must be an object")
+        capability = permission.get("capability")
+        if not isinstance(capability, dict):
+            raise ValueError(f"{path.name}: permission capability must be an object")
+        key = (capability.get("name"), capability.get("version"))
+        if key not in capabilities:
+            raise ValueError(
+                f"{path.name}: permission {capability.get('name')!r} v{capability.get('version')!r} "
+                "is not declared by capabilities"
+            )
+
+    route_ids: set[str] = set()
+    route_owners: list[tuple[str, str, str]] = []
+    for route in manifest.get("backend_routes", []):
+        if not isinstance(route, dict):
+            raise ValueError(f"{path.name}: backend route must be an object")
+        route_id = route.get("id")
+        scope = route.get("scope", "plugin")
+        route_path = route.get("path")
+        methods = route.get("methods", ["GET"])
+        handler = route.get("handler")
+        if not isinstance(route_id, str) or not ROUTE_ID.fullmatch(route_id):
+            raise ValueError(f"{path.name}: backend route id is invalid")
+        if route_id in route_ids:
+            raise ValueError(f"{path.name}: backend route ids must be unique")
+        route_ids.add(route_id)
+        if scope not in {"plugin", "host"} or not isinstance(route_path, str):
+            raise ValueError(f"{path.name}: backend route scope or path is invalid")
+        if scope == "plugin" and route_path.startswith("/"):
+            raise ValueError(f"{path.name}: plugin backend route path must be relative")
+        if (
+            scope == "plugin"
+            and route_path.split("/", 1)[0] in RESERVED_PLUGIN_ROUTE_ROOTS
+        ):
+            raise ValueError(
+                f"{path.name}: backend route conflicts with plugin management"
+            )
+        if scope == "host" and not route_path.startswith("/api/"):
+            raise ValueError(
+                f"{path.name}: host backend route path must start with /api/"
+            )
+        if scope == "host" and route_path.startswith("/api/plugins/"):
+            raise ValueError(f"{path.name}: host route cannot claim plugin management")
+        route_parts = route_path.removeprefix("/api/").split("/")
+        if not route_parts or any(
+            not ROUTE_SEGMENT.fullmatch(part) for part in route_parts
+        ):
+            raise ValueError(f"{path.name}: backend route path is invalid")
+        parameters = [part for part in route_parts if part.startswith("{")]
+        if len(parameters) != len(set(parameters)):
+            raise ValueError(f"{path.name}: backend route repeats a path parameter")
+        if (
+            not isinstance(methods, list)
+            or not methods
+            or len(methods) != len(set(methods))
+            or any(method not in ROUTE_METHODS for method in methods)
+        ):
+            raise ValueError(f"{path.name}: backend route methods are invalid")
+        if not isinstance(handler, str) or not ROUTE_HANDLER.fullmatch(handler):
+            raise ValueError(f"{path.name}: backend route handler is invalid")
+        required = (
+            "backend.routes.plugin" if scope == "plugin" else "backend.routes.host"
+        )
+        if route.get("authorization", "authenticated") not in {"authenticated", "admin"}:
+            raise ValueError(f"{path.name}: backend route authorization is invalid")
+        capability_names = {name for name, version in capabilities if version == 1}
+        if not {required, "backend.routes", "api.full"}.intersection(capability_names):
+            raise ValueError(f"{path.name}: backend route requires {required}")
+        for method in methods:
+            for owner_scope, owner_path, owner_method in route_owners:
+                owner_parts = owner_path.removeprefix("/api/").split("/")
+                overlaps = len(route_parts) == len(owner_parts) and all(
+                    left == right or left.startswith("{") or right.startswith("{")
+                    for left, right in zip(route_parts, owner_parts, strict=True)
+                )
+                if scope == owner_scope and method == owner_method and overlaps:
+                    raise ValueError(f"{path.name}: backend routes conflict")
+            route_owners.append((scope, route_path, method))
+
+    native = manifest.get("native_frontend")
+    if native is not None:
+        if not isinstance(native, dict) or ("frontend.native", 1) not in capabilities:
+            raise ValueError(f"{path.name}: native frontend requires frontend.native")
+        entry = native.get("entry")
+        styles = native.get("styles", [])
+        if not isinstance(entry, str) or not isinstance(styles, list):
+            raise ValueError(f"{path.name}: invalid native frontend declaration")
+        for asset in [entry, *styles]:
+            if (
+                not isinstance(asset, str)
+                or not asset.startswith("native/")
+                or "\\" in asset
+                or any(part in {"", ".", ".."} for part in asset.split("/"))
+                or asset not in payload_names
+            ):
+                raise ValueError(f"{path.name}: native asset is unsafe or missing")
+
+    pwa = manifest.get("pwa")
+    if pwa is not None:
+        if not isinstance(pwa, dict) or ("frontend.pwa", 1) not in capabilities:
+            raise ValueError("PWA requires frontend.pwa v1")
+        granted = {(p["capability"]["name"], p["capability"]["version"]) for p in manifest["permissions"]}
+        if ("frontend.pwa", 1) not in granted:
+            raise ValueError("PWA requires an explicit permission declaration")
+        declaration_path = pwa.get("manifest", "pwa/manifest.webmanifest")
+        if declaration_path != "pwa/manifest.webmanifest" or declaration_path not in files:
+            raise ValueError("PWA manifest is missing or unsafe")
+        webmanifest = json.loads(files[declaration_path])
+        for field in ("name", "short_name", "theme_color", "background_color"):
+            if webmanifest.get(field) != pwa.get(field, "#0f1117"):
+                raise ValueError("PWA metadata does not match declaration")
+        for field, value in {"id": "/", "scope": "/", "start_url": "/?pwa=1", "display": "standalone"}.items():
+            if webmanifest.get(field) != value:
+                raise ValueError("PWA must launch the complete root application")
+        for size in (192, 512):
+            data = files.get(f"pwa/icon-{size}.png", b"")
+            if (len(data) > 256 * 1024 or len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n"
+                    or int.from_bytes(data[16:20], "big") != size or int.from_bytes(data[20:24], "big") != size):
+                raise ValueError("PWA icon is missing, oversized or has invalid dimensions")
+
+    frontend = manifest.get("frontend")
+    if frontend is not None:
+        if isinstance(frontend, dict) and type(frontend.get("inline_assets", False)) is not bool:
+            raise ValueError(f"{path.name}: frontend.inline_assets must be a boolean")
+        entry = frontend.get("entry") if isinstance(frontend, dict) else None
+        if not isinstance(entry, str) or not entry:
+            raise ValueError(f"{path.name}: frontend.entry must be a non-empty string")
+        if entry not in payload_names:
+            raise ValueError(f"{path.name}: frontend.entry {entry!r} is not present in the package payload")
+    if full:
+        validate_current_contract(manifest, files)
+
+
+def validate_current_contract(manifest: dict, files: dict[str, bytes]) -> None:
+    from jsonschema import Draft202012Validator
+    try:
+        from .distribution import validate_metadata, version_key
+    except ImportError:
+        from distribution import validate_metadata, version_key
+    schemas = Path(__file__).parent / "schemas"
+    Draft202012Validator(json.loads((schemas / "manifest-v1.schema.json").read_text())).validate(manifest)
+    version_key(manifest["version"])
+    ranges = [manifest[field] for field in ("sdk_version_range", "application_version_range")]
+    ranges.extend(d["version_range"] for d in manifest.get("dependencies", []))
+    for value in ranges:
+        if not value.strip():
+            raise ValueError("version range must not be empty")
+        for part in value.split(","):
+            part = part.strip()
+            if part in {"", "*"}:
+                continue
+            if re.fullmatch(r"(?:>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+)*\.(?:x|\*)", part):
+                continue
+            if not re.fullmatch(r"(?:\^|~|>=|<=|>|<|=)?(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", part):
+                raise ValueError("invalid host version range")
+    for field, identifier in (("capabilities", "name"), ("dependencies", "plugin_id")):
+        values = [item[identifier] for item in manifest.get(field, [])]
+        if len(values) != len(set(values)):
+            raise ValueError(f"duplicate {field}")
+    permissions = [item["capability"]["name"] for item in manifest.get("permissions", [])]
+    if len(permissions) != len(set(permissions)):
+        raise ValueError("duplicate permissions")
+    metadata = json.loads(files["distribution.json"])
+    validate_metadata(metadata, packaged=True)
+    if metadata["version"] != manifest["version"] or type(metadata["automatic_update"]) is not bool:
+        raise ValueError("packaged release version/policy mismatch")
+    if not files.get("README.md", b"").strip() or (metadata.get("icon") and metadata["icon"] not in files):
+        raise ValueError("README/icon missing from package")
+
+    def handler_exists(handler: str) -> None:
+        module, _, function = handler.partition(":")
+        filename = module.replace(".", "/") + ".py"
+        if filename not in files:
+            raise ValueError(f"handler module is missing: {handler}")
+        tree = ast.parse(files[filename])
+        if not any(isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == (function or "main") for node in tree.body):
+            raise ValueError(f"handler function is missing: {handler}")
+
+    handler_exists(manifest["entrypoint"])
+    for route in manifest.get("backend_routes", []):
+        handler_exists(route["handler"])
+    if "ui.json" not in files:
+        if any(manifest.get("ui", {}).values()):
+            raise ValueError("declared UI contributions require ui.json")
+        return
+    document = json.loads(files["ui.json"])
+    Draft202012Validator(json.loads((schemas / "ui-v1.schema.json").read_text())).validate(document)
+    if document["plugin_id"] != manifest["plugin_id"]:
+        raise ValueError("UI plugin identity mismatch")
+    for field in ("settings", "actions", "pages", "menus"):
+        ids = [item["id"] for item in document.get(field, [])]
+        if len(ids) != len(set(ids)) or set(ids) != set(manifest.get("ui", {}).get(field, [])):
+            raise ValueError(f"manifest/UI {field} mismatch")
+    for action in document.get("actions", []):
+        if not action.get("handler"):
+            raise ValueError("actions require executable handlers")
+        handler_exists(action["handler"])
+        ref = action.get("capability")
+        if ref and (ref["name"], ref["version"]) not in {(c["name"], c["version"]) for c in manifest["capabilities"]}:
+            raise ValueError("UI action capability is undeclared")
+    for page in document.get("pages", []):
+        for field in ("settings", "actions", "tables", "dialogs"):
+            if not set(page.get(field, [])) <= {x["id"] for x in document.get(field, [])}:
+                raise ValueError(f"page refers to missing {field}")
+    declared = {c["name"] for c in manifest["capabilities"]}
+    granted = {p["capability"]["name"] for p in manifest["permissions"]}
+    required = set()
+    if any(p.get("navigation", {}).get("sidebar") for p in document.get("pages", [])):
+        required.add("frontend.navigation.main")
+    if document.get("document_readers"):
+        required.add("frontend.context.documents")
+        page_ids = {p["id"] for p in document.get("pages", [])}
+        if any(reader["page_id"] not in page_ids for reader in document["document_readers"]):
+            raise ValueError("document reader refers to a missing page")
+    if any(not field.get("secret") for section in document.get("settings", []) for field in section.get("fields", [])):
+        required.add("plugin.settings")
+    if not required <= declared & granted:
+        raise ValueError("UI contributions require declared frontend/settings permissions")
+
+
+def main() -> None:
+    full = "--full" in sys.argv
+    paths = [Path(value) for value in sys.argv[1:] if value != "--full"]
+    if not paths:
+        raise SystemExit("at least one package path is required")
+    for package in paths:
+        validate_package(package, full=full)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,31 @@
+{
+  "manifest_version": 1,
+  "plugin_id": "yourname.hello-world",
+  "name": "Hello World",
+  "version": "0.1.0",
+  "description": "A greeting from your independent plugin.",
+  "entrypoint": "plugin:main",
+  "sdk_version_range": "^1.0.0",
+  "application_version_range": "*",
+  "capabilities": [],
+  "permissions": [],
+  "dependencies": [],
+  "ui": {
+    "pages": [
+      "hello"
+    ],
+    "actions": [
+      "greet"
+    ],
+    "settings": [],
+    "menus": []
+  },
+  "storage": {
+    "quota_mb": 1
+  },
+  "integrity": {
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "signature": null,
+    "key_id": null
+  }
+}

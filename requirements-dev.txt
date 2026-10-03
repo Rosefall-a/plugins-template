@@ -1,0 +1,6 @@
+pytest>=8,<10
+cryptography>=43,<51
+jsonschema>=4.23,<5
+pydantic>=2,<3
+Pillow>=12,<13
+ruff>=0.9,<1
