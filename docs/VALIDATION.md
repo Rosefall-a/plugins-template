@@ -31,7 +31,7 @@ Validation date: 3 October 2026. Revisions and architectural comparison are in
 - Fresh local Git clone: own virtual environment/dependencies, deleted starter,
   generated `alice.greeting`, changed Python feature, validated and built an
   unsigned package, generated Alice's private identity outside the checkout,
-  published/verified two signed versions and their catalogue, and passed all
+  published/verified three signed versions and their catalogue, and passed all
   14 tests. No source plugin checkout or official signing credentials required.
 - Browser acceptance: built the pinned host frontend with Node.js 22 (Vue
   typecheck and Vite build passed), authenticated against the real PostgreSQL
@@ -39,6 +39,8 @@ Validation date: 3 October 2026. Revisions and architectural comparison are in
   entered `Developer`, clicked `Say hello`, and observed **Hello, Developer!**
   returned by the real Python worker through the host message bridge. This found
   and fixed the starter's use of form submission in a script-only sandbox.
+  Afterwards uninstalled that plugin and confirmed it disappeared from the host
+  list and its UI endpoint returned 404; stopped the disposable host/database.
   Bridge tests also cover wrong-frame/stale replies, error rendering and timeout
   recovery. The built-in catalogue was explicitly disabled in disposable HTTP
   acceptance; that host control is the only catalogue identity in the harness.
@@ -67,6 +69,6 @@ bundles, native modules and privileged PWA/browser integrations were not exercis
 end-to-end. The host is the pinned plugin-enabled branch, not ordinary main.
 
 The template's normal CI includes blocking authenticated acceptance with a fresh
-service database. Both jobs passed on `be1a8c7347e15cf5b818257b2c0084d24273c293`
-([run](https://github.com/Rosefall-a/plugins-template/actions/runs/37129774742)).
+service database. Both jobs passed on `427971f37367b8646bfa32d19359584490d84367`
+([run](https://github.com/Rosefall-a/plugins-template/actions/runs/37131454212)).
 Read the current PR checks for execution status after subsequent changes.
