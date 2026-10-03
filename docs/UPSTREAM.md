@@ -5,7 +5,7 @@ Inspected on 3 October 2026:
 - Source: [plugin repository](https://github.com/Rosefall-a/unnamed_tracking_app_plugins),
   revision `8bc13e2ef97bc48a774b54490ee0f93744e6458c`.
 - Template starting revision: `a9dbee4ae60c17c9d8aa5e3bd024aa60c7254ff4` (README only).
-- Public host integration target: [host plugin-manager](https://github.com/Rosefall-a/unnamed_tracking_app/tree/plugin-manager),
+- Public host integration target: [host contract revision](https://github.com/Rosefall-a/unnamed_tracking_app/tree/83a6fadec8b725bf94bec4583faab48af2aa84dc),
   revision `83a6fadec8b725bf94bec4583faab48af2aa84dc`.
 - Exported manifest/UI schemas originate at host
   `f1165fcc805e57ee428e7bc42fa6b83f4a6caf25`; current host conformance is tested
@@ -50,7 +50,9 @@ installation, gateway, permissions, trusted publisher review and UI rendering.
   provenance/version policy were removed; generic PWA asset validation remains.
   The real host retains its official-only site-wide PWA policy.
 - `release_record` avoids loading signing identities for a package with no key
-  ID. This tiny generic fix is proposed upstream with regression coverage;
+  ID. This tiny generic fix was squash-merged upstream in
+  [PR #38](https://github.com/Rosefall-a/unnamed_tracking_app_plugins/pull/38)
+  with regression coverage;
   unsigned previews can have an empty registry. Signed verification still needs
   the complete existing strict registry and cannot accept unknown keys.
 - New source/signing/frontend helpers orchestrate the same machinery; they do not
@@ -72,8 +74,11 @@ repository's publisher, catalogue, signing identity or release target.
 Documentation was checked against host runtime and frontend implementation,
 including `plugin.save-secret` (the current bridge name), brokered storage and
 native frontend authority. Contract enum presence alone is not documented as a
-working gateway method. Ordinary host main at the time of inspection contains
-no plugin subsystem; the tested plugin-enabled branch is explicitly named.
+working gateway method. The pinned conformance revision is a test target;
+developers install a standard released application with the required plugin
+support. CI against a source revision does not establish availability in a
+published release. See the developer guide's release check and host-feature PR
+instructions when required support is missing.
 
 Follow [DEVELOPMENT.md](../DEVELOPMENT.md) without fetching the upstream plugin
 repository. See [VALIDATION.md](VALIDATION.md) for the exact exercised scope.

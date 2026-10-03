@@ -8,10 +8,14 @@ include official plugins, maintained examples, official signing keys or a wiki.
 ## 1. Prepare your fork
 
 Install Git and Python **3.12 or newer**. Node.js **22 or newer** is needed to validate the starter JavaScript. npm is
-needed when you add a frontend build. A plugin-enabled Unnamed Tracking deployment is
-needed for installation and UI testing. The currently tested host contract is
-on `plugin-manager`, revision `83a6fadec8b725bf94bec4583faab48af2aa84dc`; host
-`main` currently does not contain this plugin system. See [provenance](docs/UPSTREAM.md).
+needed when you add a frontend build. Use a standard released Unnamed Tracking
+deployment for installation and UI testing. Check that it provides
+**Settings → Plugins** and the capabilities your plugin needs. If support is
+missing, building packages still works locally, but installation or the affected
+feature must wait for a supporting host release. Follow
+[the host-feature contribution guide](#11-propose-a-missing-host-feature).
+The reproducible host contract used by CI is recorded in
+[provenance](docs/UPSTREAM.md); a CI revision is not proof of release availability.
 
 Fork the template and clone your fork, not the original:
 
@@ -450,7 +454,10 @@ its generated manifests, packages/history/list together before hosting them.
 
 ## 8. Install, enable, use, update and uninstall locally
 
-Use a disposable **plugin-enabled** host deployment and account. Host setup owns
+Use a disposable instance of a standard released Unnamed Tracking version and
+account. Confirm **Settings → Plugins** exists and check release compatibility
+before attempting installation. Missing host support requires a supporting
+release; see [section 11](#11-propose-a-missing-host-feature). Host setup owns
 its PostgreSQL, runtime/container and frontend; this repository does not replace
 them. Building packages works on Windows; worker execution uses Linux POSIX
 resource/process controls. Do not enable reduced isolation in production merely
@@ -564,9 +571,77 @@ Common failures: duplicate IDs/incomplete source directories; UI IDs not matchin
 the manifest; absent handler/bundled entry; unsupported ranges; missing npm lock
 or build/test scripts; publisher label/scope mismatch; dirty signed source;
 changing bytes under a published version; trying an unverified package without
-host consent; attempting plugin installation in ordinary host main. Fix the
+host consent; an installed release missing plugin support or a required API. Fix the
 contract or configuration; do not disable validators or silently broaden grants.
 
 Record the exact host version, platform, checks and manual lifecycle evidence in
 your release review. See [validation evidence](docs/VALIDATION.md) for the template's
 tested scope and limitations.
+
+## 11. Propose a missing host feature
+
+If your plugin needs a capability, UI contribution, route or runtime behavior
+that the released application does not expose, propose the smallest general
+extension to the [main application](https://github.com/Rosefall-a/unnamed_tracking_app).
+Open the PR against its `main` branch and follow that repository's AGENTS.md,
+contribution instructions and tests. This template's repository is for plugin
+development; host behavior belongs in the application.
+
+First confirm the gap against the installed release and current application
+source. Try the supported SDK/gateway methods and UI mechanisms. An enum or
+schema field alone does not establish a working host implementation. Record a
+small reproduction and the expected behavior; discuss a substantial API or
+permission change with maintainers before building a large implementation.
+
+Include these points in the PR description:
+
+- **What changes:** the proposed public contract and host behavior, the plugin
+  use case, and a concrete before/after example. Identify the smallest reusable
+  API rather than adding behavior tied to one third-party plugin.
+- **Why it is needed:** the blocked user workflow, which supported APIs you
+  tried, why they cannot provide it, and who else could use the extension.
+- **Alternatives considered:** explain the actual options and why each was less
+  suitable for this use case. Compare existing declarative/sandboxed UI, a
+  narrower gateway method or scoped route, an external integration, and a core
+  application feature where relevant. Include concrete limitations or measured
+  tradeoffs; do not invent failed alternatives or assume broader access is better.
+- **Permissions and isolation:** which capability and scope are needed, how
+  consent and denial work, which users/resources may be accessed, how secrets
+  stay in brokered storage, and how the host validates requests. Reading host
+  credentials, private files or databases directly is not a supported workaround.
+- **Compatibility:** SDK/schema changes, dependency and version requirements,
+  behavior on older hosts, migration/rollback behavior, and any breaking changes.
+- **Validation:** meaningful host tests for success, denial, invalid input and
+  relevant lifecycle behavior; plugin-side tests and a real installation/use
+  walkthrough. Include screenshots for UI changes and exact test commands.
+
+A useful PR outline is:
+
+```markdown
+## Change
+[Public API and before/after behavior.]
+
+## Motivation
+[Blocked plugin workflow and evidence that the existing API is insufficient.]
+
+## Alternatives considered
+[Options tried, their tradeoffs, and why the proposed change fits better.]
+
+## Permissions and compatibility
+[Scope, consent, isolation, supported versions and migration behavior.]
+
+## Validation
+[Tests, commands and manual lifecycle/UI evidence.]
+```
+
+Update the real host contract and any affected shared tooling together. Export
+schemas from the application and bring aligned generic changes into this
+template and the plugin tooling repository where needed. Do not implement a
+private SDK, compatibility shim or extra permission merely to bypass the gap.
+
+After the feature is merged **and released**, test your plugin against that
+standard release. Set `application_version_range` (and `sdk_version_range` if
+needed) in `manifest.json` to the versions you actually support, increment the
+plugin version, then validate/build/sign again. Document the required host
+release in the plugin README. A merged PR or passing development CI does not
+mean an older installed release already supports the feature.

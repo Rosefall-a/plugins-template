@@ -66,7 +66,8 @@ Public package/catalogue hosting and developer-owned release secrets were not
 exercised against a production account. Catalogue URLs and exact metadata/hashes
 were validated locally. The starter sandbox UI was exercised; third-party npm
 bundles, native modules and privileged PWA/browser integrations were not exercised
-end-to-end. The host is the pinned plugin-enabled branch, not ordinary main.
+end-to-end. Host tests used the pinned source revision, not a published release;
+the standard-release instructions require checking installed plugin support.
 
 The template's normal CI includes blocking authenticated acceptance with a fresh
 service database. Both jobs passed on `427971f37367b8646bfa32d19359584490d84367`

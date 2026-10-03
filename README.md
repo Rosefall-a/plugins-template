@@ -26,9 +26,10 @@ sandboxed frontend and displays its response. Remove it once
 you have your own plugin. Create more plugins under `plugins/` with unique IDs.
 
 Open **Settings → Plugins → Install plugin** in a plugin-enabled Unnamed Tracking
-instance, upload your `.validation/dist/*.utp`, review unsigned-package consent
-and permissions, then enable it and open its page. The host's plugin system is
-currently on its `plugin-manager` branch; ordinary host `main` is not sufficient.
+instance running a standard released version, upload your `.validation/dist/*.utp`,
+review unsigned-package consent and permissions, then enable it and open its page.
+Check that your release provides **Settings → Plugins** and the APIs you need;
+see the guide if support is missing.
 
 For optional signing, generate/register your own identity with
 `tools/create_signing_identity.py`, configure `PLUGIN_SIGNING_KEY_ID` and
@@ -54,4 +55,6 @@ Checks: `python -m ruff check .`, `python tools/build_frontends.py --install`,
 
 [Follow the developer guide](DEVELOPMENT.md) for the full first-plugin workflow,
 capabilities, secrets, UI, packaging, signing, installation and your own catalogue.
+[Propose missing host features](DEVELOPMENT.md#11-propose-a-missing-host-feature)
+with the change, motivation, alternatives and tests in a PR to the main application.
 [Tooling provenance and comparison](docs/UPSTREAM.md) records what was retained.
