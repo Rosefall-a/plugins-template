@@ -5,7 +5,7 @@ personal, private, experimental or published. It uses the real Plugin API v1 SDK
 manifest validators, `.utp` builder and Ed25519 signing tools. It is not the
 official plugin catalogue. Your plugins do not become official by using it.
 
-Fork this repository, then clone **your fork**:
+Install Python 3.12+ and Node.js 22+. Fork this repository, then clone **your fork**:
 
 ```sh
 git clone https://github.com/YOUR-ACCOUNT/YOUR-REPOSITORY.git
@@ -21,7 +21,8 @@ python tools/verify_packages.py .validation/dist/yourname.my-plugin-0.1.0.utp
 ```
 
 Edit `plugins/my-plugin/plugin.py`, `manifest.json`, `ui.json` and `release.json`.
-The deletable `hello-world` starter is a real greeting page/action. Remove it once
+The deletable `hello-world` starter runs a real Python action through a small
+sandboxed frontend and displays its response. Remove it once
 you have your own plugin. Create more plugins under `plugins/` with unique IDs.
 
 Open **Settings → Plugins → Install plugin** in a plugin-enabled Unnamed Tracking

@@ -7,8 +7,8 @@ include official plugins, maintained examples, official signing keys or a wiki.
 
 ## 1. Prepare your fork
 
-Install Git and Python **3.12 or newer**. Node.js 22/npm are needed if you add
-JavaScript or a frontend build. A plugin-enabled Unnamed Tracking deployment is
+Install Git and Python **3.12 or newer**. Node.js **22 or newer** is needed to validate the starter JavaScript. npm is
+needed when you add a frontend build. A plugin-enabled Unnamed Tracking deployment is
 needed for installation and UI testing. The currently tested host contract is
 on `plugin-manager`, revision `83a6fadec8b725bf94bec4583faab48af2aa84dc`; host
 `main` currently does not contain this plugin system. See [provenance](docs/UPSTREAM.md).
@@ -242,7 +242,10 @@ readable by a rollback version; rolling code back does not roll data back.
 
 ## 5. Add UI and backend APIs
 
-Start with declarative `ui.json` pages, actions and settings. The host renders
+The starter uses a small sandboxed frontend to display the result of its Python
+action. Declarative buttons dispatch actions, but the current host does not
+display their returned JSON. For simpler forms, use declarative `ui.json` pages,
+actions and settings. The host renders
 them and filters by lifecycle/grants. Pages reference action/settings/table/dialog
 IDs. `pages[].components` is not a v1 field. Main navigation needs
 `frontend.navigation.main` and `navigation: {"sidebar": true}` on a declared page.
@@ -261,11 +264,15 @@ For a sandboxed bundle, declare
 `"frontend": {"entry": "frontend/index.html", "inline_assets": true}` and bundle
 local HTML/JS/CSS. The host uses an opaque `sandbox="allow-scripts"` iframe.
 Approved interaction goes through the `postMessage` bridge; there is no general
-cookie, host DOM or private backend access. Send a unique `requestId`:
+cookie, host DOM or private backend access. Use script click handlers rather than
+HTML form submission: the sandbox does not grant `allow-forms`. Generate request
+IDs with `crypto.getRandomValues`; `crypto.randomUUID` depends on a secure context
+and may be unavailable in a sandbox on a local development host. Send a unique
+`requestId`:
 
 ```javascript
 parent.postMessage({
-  type: "plugin-api-request", requestId: crypto.randomUUID(),
+  type: "plugin-api-request", requestId: Array.from(crypto.getRandomValues(new Uint32Array(4))).join("-"),
   method: "plugin.run-action", payload: {actionId: "greet", values: {name: "Developer"}}
 }, "*");
 ```
@@ -279,8 +286,8 @@ For a frontend build, keep tooling under e.g. `plugins/my-plugin/ui-src/`, commi
 `package.json` and `package-lock.json`, and make its build emit local files into
 `../frontend/` or `../native/`. Declare **build and test scripts**. The template's
 `python tools/build_frontends.py --install` runs npm ci, declared lint/typecheck,
-tests and build, then JS syntax checks. Static assets need no npm project; add
-behavior/browser tests appropriate to your UI. Packaging does not run bundlers
+tests and build, then JS syntax checks. Static assets need no npm project. The starter has bridge-response unit tests;
+add behavior/browser tests appropriate to your UI. Packaging does not run bundlers
 implicitly; build before packaging. Do not depend on the official plugins or a
 remote CDN for bundled frontend dependencies.
 

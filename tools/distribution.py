@@ -262,9 +262,7 @@ def catalogue_document(root: Path, plugins: list[tuple[Path, dict]], histories: 
     for source, source_manifest in sorted(plugins, key=lambda p: p[1]["plugin_id"]):
         history = histories.get(source_manifest["plugin_id"])
         if not history:
-            if source.relative_to(root).parts[0] != "official":
-                raise ValueError("non-official source is missing release history")
-            continue
+            raise ValueError("plugin source is missing release history")
         latest = catalogue_release(history[-1], base)
         manifest = latest["manifest"]
         entries.append({**latest, "name": manifest["name"], "description": manifest.get("description", ""),
@@ -340,11 +338,7 @@ def validate_distribution(output: Path, *, source_root: Path = ROOT, check_sourc
     if len({e["plugin_id"] for e in entries}) != len(entries):
         raise ValueError("duplicate catalogue identity")
     sources = {m["plugin_id"]: (s, m) for s, m in discover_plugins(source_root)}
-    released_sources = {
-        plugin_id for plugin_id, (source, _) in sources.items()
-        if plugin_id in histories or source.relative_to(source_root).parts[0] != "official"
-    }
-    expected_sources = set(sources) if check_source else released_sources
+    expected_sources = set(sources)
     if expected_sources != {e["plugin_id"] for e in entries}:
         raise ValueError("catalogue does not match source plugin set")
     config_path = source_root / "catalogue.json"

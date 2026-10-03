@@ -30,7 +30,7 @@ def commit(root, message):
 @pytest.fixture
 def independent(tmp_path):
     root = tmp_path / "fork"
-    shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns(".git", ".validation", "__pycache__", ".pytest_cache", ".ruff_cache", "dist", "releases", "list.json", "plugins", "*.b64"))
+    shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns(".git", ".validation", ".venv", "node_modules", "__pycache__", ".pytest_cache", ".ruff_cache", "dist", "releases", "list.json", "plugins", "*.b64"))
     (root / "publishers/registry.json").write_text(json.dumps({"schema_version": 1, "publishers": []}))
     run(root, "tools/new_plugin.py", "hello-world", "--id", "yourname.hello-world", "--name", "Hello World", "--publisher", "Your Name")
     subprocess.run(["git", "init", str(root)], check=True, capture_output=True)
@@ -74,6 +74,11 @@ def test_greeting_uses_public_protocol(independent):
     assert plugin.greet({}) == {"message": "Hello, world!"}
     assert plugin.greet({"name": "Developer"}) == {"message": "Hello, Developer!"}
     assert plugin.greet({"name": " "}) == {"message": "Hello, world!"}
+
+
+def test_starter_frontend_bridge(independent):
+    subprocess.run(["node", str(ROOT / "tests/starter_ui.test.cjs"),
+                    str(independent[0] / "plugins/hello-world/frontend/hello.js")], check=True)
 
 
 def test_fresh_developer_signed_releases_and_immutable_history(independent, tmp_path):

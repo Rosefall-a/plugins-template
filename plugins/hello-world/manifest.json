@@ -27,5 +27,9 @@
     "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
     "signature": null,
     "key_id": null
+  },
+  "frontend": {
+    "entry": "frontend/index.html",
+    "inline_assets": true
   }
 }

@@ -5,6 +5,11 @@ import re
 import shutil
 from pathlib import Path
 
+try:
+    from .starter_ui import HTML, JAVASCRIPT
+except ImportError:
+    from starter_ui import HTML, JAVASCRIPT
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -31,8 +36,10 @@ def create(slug: str, plugin_id: str, name: str, publisher: str, source: Path | 
                 "entrypoint": "plugin:main", "sdk_version_range": "^1.0.0", "application_version_range": "*",
                 "capabilities": [], "permissions": [], "dependencies": [], "storage": {"quota_mb": 1},
                 "ui": {"pages": ["hello"], "actions": ["greet"], "settings": [], "menus": []},
+                "frontend": {"entry": "frontend/index.html", "inline_assets": True},
                 "integrity": {"sha256": "0" * 64, "signature": None, "key_id": None}},
             "ui.json": {"schema_version": "v1", "plugin_id": plugin_id, "title": name,
+                "frontend": {"entry": "frontend/index.html", "inline_assets": True},
                 "actions": [{"id": "greet", "label": "Say hello", "handler": "plugin:greet"}],
                 "pages": [{"id": "hello", "title": name, "actions": ["greet"]}]},
             "release.json": {"schema_version": 1, "publisher": publisher, "tags": ["personal"],
@@ -40,6 +47,9 @@ def create(slug: str, plugin_id: str, name: str, publisher: str, source: Path | 
         }
         for filename, document in recipe.items():
             (destination / filename).write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+        (destination / "frontend").mkdir()
+        (destination / "frontend/index.html").write_text(HTML, encoding="utf-8")
+        (destination / "frontend/hello.js").write_text(JAVASCRIPT, encoding="utf-8")
         (destination / "plugin.py").write_text('''"""An independent Plugin API v1 greeting."""
 import time
 from sdk.plugin_protocol import request

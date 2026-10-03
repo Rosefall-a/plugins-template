@@ -17,5 +17,9 @@
         "greet"
       ]
     }
-  ]
+  ],
+  "frontend": {
+    "entry": "frontend/index.html",
+    "inline_assets": true
+  }
 }
