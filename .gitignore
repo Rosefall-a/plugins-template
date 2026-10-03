@@ -1,0 +1,8 @@
+node_modules/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.validation/
+.venv/
+*.private-seed.b64
+.env

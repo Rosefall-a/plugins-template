@@ -1,0 +1,25 @@
+{
+  "schema_version": "v1",
+  "plugin_id": "yourname.hello-world",
+  "title": "Hello World",
+  "actions": [
+    {
+      "id": "greet",
+      "label": "Say hello",
+      "handler": "plugin:greet"
+    }
+  ],
+  "pages": [
+    {
+      "id": "hello",
+      "title": "Hello World",
+      "actions": [
+        "greet"
+      ]
+    }
+  ],
+  "frontend": {
+    "entry": "frontend/index.html",
+    "inline_assets": true
+  }
+}

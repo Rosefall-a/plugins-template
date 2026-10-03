@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My greeting</title>
+<style>
+body { font: 1rem system-ui; color: #eee; background: #111; padding: 1rem; }
+input, button { font: inherit; padding: .5rem; }
+label { display: block; margin-bottom: .5rem; }
+</style>
+<h1>My greeting</h1>
+<div id="greeting">
+  <label for="name">Your name</label>
+  <input id="name" value="world" maxlength="80">
+  <button type="button">Say hello</button>
+</div>
+<p id="result" role="status" aria-live="polite">Ready to greet you.</p>
+<script src="hello.js"></script>
+</html>

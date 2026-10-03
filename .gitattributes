@@ -1,0 +1,6 @@
+# Keep plugin source bytes consistent across Windows and Linux checkouts.
+* text=auto eol=lf
+plugins/** text=auto eol=lf
+sdk/** text eol=lf
+*.utp binary
+*.png binary

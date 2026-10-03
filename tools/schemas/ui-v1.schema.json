@@ -1,0 +1,1386 @@
+{
+  "$defs": {
+    "Capability": {
+      "description": "Stable capability identifiers grouped by capability family.",
+      "enum": [
+        "users",
+        "users.read",
+        "users.profile.read",
+        "games",
+        "games.read",
+        "games.write",
+        "media",
+        "media.read",
+        "media.write",
+        "documents",
+        "documents.read",
+        "sessions",
+        "sessions.read",
+        "sessions.revoke",
+        "sessions.admin",
+        "notifications.send",
+        "notifications",
+        "notification_providers",
+        "notification_providers.register",
+        "notification_providers.deliver",
+        "events.subscribe",
+        "tasks.background",
+        "sessions.admin.read",
+        "sessions.admin.revoke",
+        "sessions.geoip.read",
+        "sessions.geoip.configure",
+        "media.import",
+        "plugin.storage",
+        "plugin.settings",
+        "frontend.navigation",
+        "frontend.navigation.main",
+        "frontend.navigation.settings",
+        "frontend.navigation.admin",
+        "frontend.context.game",
+        "frontend.context.media",
+        "frontend.context.documents",
+        "frontend.settings",
+        "frontend.overlay",
+        "frontend.dialog",
+        "frontend.page.extend",
+        "frontend.page.replace.home",
+        "frontend.page.replace.settings",
+        "frontend.routes",
+        "frontend.native",
+        "frontend.pwa",
+        "backend.routes",
+        "backend.routes.plugin",
+        "backend.routes.host",
+        "network.outbound",
+        "api.full"
+      ],
+      "title": "Capability",
+      "type": "string"
+    },
+    "CapabilityRef": {
+      "additionalProperties": false,
+      "description": "A capability plus the version of its semantics.",
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/Capability"
+        },
+        "version": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CapabilityRef",
+      "type": "object"
+    },
+    "HostExtensionSlot": {
+      "description": "Host-owned locations that accept declarative plugin contributions.",
+      "enum": [
+        "home.after-widgets",
+        "game.overview.after-header",
+        "game.documents.actions",
+        "media.detail.after-header",
+        "app.global",
+        "home.replace"
+      ],
+      "title": "HostExtensionSlot",
+      "type": "string"
+    },
+    "HostPage": {
+      "description": "Host pages with explicit page-scoped replacement permissions.",
+      "enum": [
+        "home",
+        "settings"
+      ],
+      "title": "HostPage",
+      "type": "string"
+    },
+    "PluginFrontendDeclaration": {
+      "additionalProperties": false,
+      "description": "Sandboxed frontend entrypoint bundled inside the plugin package.",
+      "properties": {
+        "entry": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_./-]*$",
+          "title": "Entry",
+          "type": "string"
+        },
+        "inline_assets": {
+          "default": false,
+          "title": "Inline Assets",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "entry"
+      ],
+      "title": "PluginFrontendDeclaration",
+      "type": "object"
+    },
+    "PluginNativeFrontendDeclaration": {
+      "additionalProperties": false,
+      "description": "Privileged host-native Vue/JavaScript/CSS bundle declaration.\n\nMerely declaring this bundle never grants native execution. The host only\nserves and activates it for an enabled installation with frontend.native.",
+      "properties": {
+        "entry": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_./-]*$",
+          "title": "Entry",
+          "type": "string"
+        },
+        "styles": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Styles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "entry"
+      ],
+      "title": "PluginNativeFrontendDeclaration",
+      "type": "object"
+    },
+    "UiAction": {
+      "additionalProperties": false,
+      "description": "A declarative action dispatched through the authenticated gateway.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "handler": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*(?::[A-Za-z_][A-Za-z0-9_]*)?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Handler"
+        },
+        "capability": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CapabilityRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmation"
+        },
+        "external_navigation": {
+          "default": false,
+          "title": "External Navigation",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "title": "UiAction",
+      "type": "object"
+    },
+    "UiContextLocation": {
+      "description": "Host contexts that can expose a plugin action.",
+      "enum": [
+        "game",
+        "media",
+        "documents"
+      ],
+      "title": "UiContextLocation",
+      "type": "string"
+    },
+    "UiContextualAction": {
+      "additionalProperties": false,
+      "description": "An action exposed only in a declared game or media context.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "location": {
+          "$ref": "#/$defs/UiContextLocation"
+        },
+        "label": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "action_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "order": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": -1000,
+          "title": "Order",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "location",
+        "label",
+        "action_id"
+      ],
+      "title": "UiContextualAction",
+      "type": "object"
+    },
+    "UiDialog": {
+      "additionalProperties": false,
+      "description": "A declarative dialog whose actions still execute through the gateway.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "body": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Body",
+          "type": "string"
+        },
+        "actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "UiDialog",
+      "type": "object"
+    },
+    "UiDialogContribution": {
+      "additionalProperties": false,
+      "description": "A host-level dialog backed by an existing declarative dialog.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "dialog_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Dialog Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "dialog_id"
+      ],
+      "title": "UiDialogContribution",
+      "type": "object"
+    },
+    "UiDocumentReader": {
+      "additionalProperties": false,
+      "description": "A scoped reader offered for game document rows, never arbitrary URLs.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "page_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Page Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "extensions": {
+          "default": [
+            "*"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Extensions",
+          "type": "array"
+        },
+        "order": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": -1000,
+          "title": "Order",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "page_id",
+        "label"
+      ],
+      "title": "UiDocumentReader",
+      "type": "object"
+    },
+    "UiExtension": {
+      "additionalProperties": false,
+      "description": "A native plugin page mounted into one allowlisted host extension slot.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "slot": {
+          "$ref": "#/$defs/HostExtensionSlot"
+        },
+        "page_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Page Id",
+          "type": "string"
+        },
+        "order": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": -1000,
+          "title": "Order",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "slot",
+        "page_id"
+      ],
+      "title": "UiExtension",
+      "type": "object"
+    },
+    "UiField": {
+      "additionalProperties": false,
+      "description": "One declarative settings value; secrets are write-only at the host boundary.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/UiFieldType"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Description",
+          "type": "string"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "secret": {
+          "default": false,
+          "title": "Secret",
+          "type": "boolean"
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default"
+        },
+        "options": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/UiOption"
+          },
+          "title": "Options",
+          "type": "array"
+        },
+        "validation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UiValidation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "type"
+      ],
+      "title": "UiField",
+      "type": "object"
+    },
+    "UiFieldType": {
+      "description": "Native field controls supported by the v1 renderer.",
+      "enum": [
+        "text",
+        "textarea",
+        "password",
+        "number",
+        "boolean",
+        "select",
+        "multiselect"
+      ],
+      "title": "UiFieldType",
+      "type": "string"
+    },
+    "UiMenuItem": {
+      "additionalProperties": false,
+      "description": "A native navigation item; arbitrary external URLs are not supported.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "page_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Id"
+        },
+        "action_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Id"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "title": "UiMenuItem",
+      "type": "object"
+    },
+    "UiNavigationContribution": {
+      "additionalProperties": false,
+      "description": "A first-class host navigation entry with one host-validated target.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "location": {
+          "$ref": "#/$defs/UiNavigationLocation"
+        },
+        "label": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "page_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[a-z0-9][a-z0-9._-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Id"
+        },
+        "route_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[a-z0-9][a-z0-9._-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Route Id"
+        },
+        "settings_section_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[a-z0-9][a-z0-9._-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Settings Section Id"
+        },
+        "action_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[a-z0-9][a-z0-9._-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Id"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "order": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": -1000,
+          "title": "Order",
+          "type": "integer"
+        },
+        "visibility": {
+          "$ref": "#/$defs/UiVisibility",
+          "default": {
+            "admin_only": false
+          }
+        }
+      },
+      "required": [
+        "id",
+        "location",
+        "label"
+      ],
+      "title": "UiNavigationContribution",
+      "type": "object"
+    },
+    "UiNavigationLocation": {
+      "description": "Host-owned navigation locations available to plugin contributions.",
+      "enum": [
+        "main.sidebar",
+        "settings.sidebar",
+        "administration",
+        "game.context",
+        "media.context"
+      ],
+      "title": "UiNavigationLocation",
+      "type": "string"
+    },
+    "UiOption": {
+      "additionalProperties": false,
+      "description": "A non-executable option rendered by a select control.",
+      "properties": {
+        "value": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "label"
+      ],
+      "title": "UiOption",
+      "type": "object"
+    },
+    "UiOverlayContribution": {
+      "additionalProperties": false,
+      "description": "A host-level overlay rendered from a declared plugin page.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "page_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Page Id",
+          "type": "string"
+        },
+        "order": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": -1000,
+          "title": "Order",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "page_id"
+      ],
+      "title": "UiOverlayContribution",
+      "type": "object"
+    },
+    "UiPage": {
+      "additionalProperties": false,
+      "description": "A native plugin page composed only from approved declarative primitives.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Description",
+          "type": "string"
+        },
+        "settings": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Settings",
+          "type": "array"
+        },
+        "actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Actions",
+          "type": "array"
+        },
+        "tables": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Tables",
+          "type": "array"
+        },
+        "dialogs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Dialogs",
+          "type": "array"
+        },
+        "navigation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UiPageNavigation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "UiPage",
+      "type": "object"
+    },
+    "UiPageNavigation": {
+      "additionalProperties": false,
+      "description": "Optional host navigation metadata for a native plugin page.",
+      "properties": {
+        "sidebar": {
+          "default": false,
+          "title": "Sidebar",
+          "type": "boolean"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "order": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": -1000,
+          "title": "Order",
+          "type": "integer"
+        }
+      },
+      "title": "UiPageNavigation",
+      "type": "object"
+    },
+    "UiPageReplacement": {
+      "additionalProperties": false,
+      "description": "A page-specific replacement with no replace-any-page escape hatch.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "page": {
+          "$ref": "#/$defs/HostPage"
+        },
+        "page_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Page Id",
+          "type": "string"
+        },
+        "order": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": -1000,
+          "title": "Order",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "page",
+        "page_id"
+      ],
+      "title": "UiPageReplacement",
+      "type": "object"
+    },
+    "UiPluginRoute": {
+      "additionalProperties": false,
+      "description": "A plugin-owned route under the host-controlled plugin route namespace.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9/_-]*$",
+          "title": "Path",
+          "type": "string"
+        },
+        "page_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Page Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "page_id"
+      ],
+      "title": "UiPluginRoute",
+      "type": "object"
+    },
+    "UiSchemaVersion": {
+      "description": "Versioned declarative UI schema semantics.",
+      "enum": [
+        "v1"
+      ],
+      "title": "UiSchemaVersion",
+      "type": "string"
+    },
+    "UiSettingsContribution": {
+      "additionalProperties": false,
+      "description": "A plugin-provided Settings section, separate from plugin configuration.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "page_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Page Id",
+          "type": "string"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "order": {
+          "default": 0,
+          "maximum": 1000,
+          "minimum": -1000,
+          "title": "Order",
+          "type": "integer"
+        },
+        "visibility": {
+          "$ref": "#/$defs/UiVisibility",
+          "default": {
+            "admin_only": false
+          }
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "page_id"
+      ],
+      "title": "UiSettingsContribution",
+      "type": "object"
+    },
+    "UiSettingsSection": {
+      "additionalProperties": false,
+      "description": "A declarative group of settings fields.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Description",
+          "type": "string"
+        },
+        "fields": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/UiField"
+          },
+          "title": "Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "UiSettingsSection",
+      "type": "object"
+    },
+    "UiTable": {
+      "additionalProperties": false,
+      "description": "A declarative read-only table.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "columns": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/UiTableColumn"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "empty_message": {
+          "default": "No data available.",
+          "maxLength": 512,
+          "title": "Empty Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "UiTable",
+      "type": "object"
+    },
+    "UiTableColumn": {
+      "additionalProperties": false,
+      "description": "A table column mapped to a response property, never executable code.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "title": "UiTableColumn",
+      "type": "object"
+    },
+    "UiValidation": {
+      "additionalProperties": false,
+      "description": "Safe client/server validation constraints for a declarative field.",
+      "properties": {
+        "pattern": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern"
+        },
+        "min_length": {
+          "anyOf": [
+            {
+              "maximum": 10000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Length"
+        },
+        "max_length": {
+          "anyOf": [
+            {
+              "maximum": 10000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Length"
+        },
+        "minimum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum"
+        },
+        "maximum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum"
+        }
+      },
+      "title": "UiValidation",
+      "type": "object"
+    },
+    "UiVisibility": {
+      "additionalProperties": false,
+      "description": "Host-evaluated visibility conditions; plugins cannot evaluate code here.",
+      "properties": {
+        "admin_only": {
+          "default": false,
+          "title": "Admin Only",
+          "type": "boolean"
+        }
+      },
+      "title": "UiVisibility",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Complete versioned UI document consumed by the native frontend host.",
+  "properties": {
+    "schema_version": {
+      "$ref": "#/$defs/UiSchemaVersion",
+      "default": "v1"
+    },
+    "plugin_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "title": "Plugin Id",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "frontend": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PluginFrontendDeclaration"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "native_frontend": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PluginNativeFrontendDeclaration"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "settings": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiSettingsSection"
+      },
+      "title": "Settings",
+      "type": "array"
+    },
+    "actions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiAction"
+      },
+      "title": "Actions",
+      "type": "array"
+    },
+    "tables": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiTable"
+      },
+      "title": "Tables",
+      "type": "array"
+    },
+    "dialogs": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiDialog"
+      },
+      "title": "Dialogs",
+      "type": "array"
+    },
+    "menus": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiMenuItem"
+      },
+      "title": "Menus",
+      "type": "array"
+    },
+    "pages": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiPage"
+      },
+      "title": "Pages",
+      "type": "array"
+    },
+    "extensions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiExtension"
+      },
+      "title": "Extensions",
+      "type": "array"
+    },
+    "navigation": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiNavigationContribution"
+      },
+      "title": "Navigation",
+      "type": "array"
+    },
+    "settings_sections": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiSettingsContribution"
+      },
+      "title": "Settings Sections",
+      "type": "array"
+    },
+    "overlays": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiOverlayContribution"
+      },
+      "title": "Overlays",
+      "type": "array"
+    },
+    "dialog_contributions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiDialogContribution"
+      },
+      "title": "Dialog Contributions",
+      "type": "array"
+    },
+    "contextual_actions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiContextualAction"
+      },
+      "title": "Contextual Actions",
+      "type": "array"
+    },
+    "routes": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiPluginRoute"
+      },
+      "title": "Routes",
+      "type": "array"
+    },
+    "page_replacements": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiPageReplacement"
+      },
+      "title": "Page Replacements",
+      "type": "array"
+    },
+    "document_readers": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/UiDocumentReader"
+      },
+      "title": "Document Readers",
+      "type": "array"
+    }
+  },
+  "required": [
+    "plugin_id",
+    "title"
+  ],
+  "title": "PluginUiDocument",
+  "type": "object"
+}

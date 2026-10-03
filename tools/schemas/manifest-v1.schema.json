@@ -1,0 +1,595 @@
+{
+  "$defs": {
+    "BackendRouteAuthorization": {
+      "description": "Authentication policy enforced by the host before plugin execution.",
+      "enum": [
+        "authenticated",
+        "admin"
+      ],
+      "title": "BackendRouteAuthorization",
+      "type": "string"
+    },
+    "BackendRouteMethod": {
+      "description": "HTTP methods supported by the bounded plugin route transport.",
+      "enum": [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE"
+      ],
+      "title": "BackendRouteMethod",
+      "type": "string"
+    },
+    "BackendRouteScope": {
+      "description": "Host-owned URL areas available to a declared plugin route.",
+      "enum": [
+        "plugin",
+        "host"
+      ],
+      "title": "BackendRouteScope",
+      "type": "string"
+    },
+    "Capability": {
+      "description": "Stable capability identifiers grouped by capability family.",
+      "enum": [
+        "users",
+        "users.read",
+        "users.profile.read",
+        "games",
+        "games.read",
+        "games.write",
+        "media",
+        "media.read",
+        "media.write",
+        "documents",
+        "documents.read",
+        "sessions",
+        "sessions.read",
+        "sessions.revoke",
+        "sessions.admin",
+        "notifications.send",
+        "notifications",
+        "notification_providers",
+        "notification_providers.register",
+        "notification_providers.deliver",
+        "events.subscribe",
+        "tasks.background",
+        "sessions.admin.read",
+        "sessions.admin.revoke",
+        "sessions.geoip.read",
+        "sessions.geoip.configure",
+        "media.import",
+        "plugin.storage",
+        "plugin.settings",
+        "frontend.navigation",
+        "frontend.navigation.main",
+        "frontend.navigation.settings",
+        "frontend.navigation.admin",
+        "frontend.context.game",
+        "frontend.context.media",
+        "frontend.context.documents",
+        "frontend.settings",
+        "frontend.overlay",
+        "frontend.dialog",
+        "frontend.page.extend",
+        "frontend.page.replace.home",
+        "frontend.page.replace.settings",
+        "frontend.routes",
+        "frontend.native",
+        "frontend.pwa",
+        "backend.routes",
+        "backend.routes.plugin",
+        "backend.routes.host",
+        "network.outbound",
+        "api.full"
+      ],
+      "title": "Capability",
+      "type": "string"
+    },
+    "CapabilityRef": {
+      "additionalProperties": false,
+      "description": "A capability plus the version of its semantics.",
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/Capability"
+        },
+        "version": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CapabilityRef",
+      "type": "object"
+    },
+    "IntegrityMetadata": {
+      "additionalProperties": false,
+      "description": "Package integrity metadata validated before plugin activation.",
+      "properties": {
+        "sha256": {
+          "pattern": "^[0-9a-fA-F]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "maxLength": 16384,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signature"
+        },
+        "key_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Key Id"
+        }
+      },
+      "required": [
+        "sha256"
+      ],
+      "title": "IntegrityMetadata",
+      "type": "object"
+    },
+    "PermissionDeclaration": {
+      "additionalProperties": false,
+      "description": "A human-readable permission request tied to a capability.",
+      "properties": {
+        "capability": {
+          "$ref": "#/$defs/CapabilityRef"
+        },
+        "rationale": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "capability",
+        "rationale"
+      ],
+      "title": "PermissionDeclaration",
+      "type": "object"
+    },
+    "PluginBackendRoute": {
+      "additionalProperties": false,
+      "description": "A statically declared backend handler mounted and mediated by the host.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/BackendRouteScope",
+          "default": "plugin"
+        },
+        "path": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "methods": {
+          "default": [
+            "GET"
+          ],
+          "items": {
+            "$ref": "#/$defs/BackendRouteMethod"
+          },
+          "title": "Methods",
+          "type": "array"
+        },
+        "handler": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*(?::[A-Za-z_][A-Za-z0-9_]*)?$",
+          "title": "Handler",
+          "type": "string"
+        },
+        "authorization": {
+          "$ref": "#/$defs/BackendRouteAuthorization",
+          "default": "authenticated"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "handler"
+      ],
+      "title": "PluginBackendRoute",
+      "type": "object"
+    },
+    "PluginDependency": {
+      "additionalProperties": false,
+      "description": "A required or optional dependency on another installed plugin.",
+      "properties": {
+        "plugin_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Plugin Id",
+          "type": "string"
+        },
+        "version_range": {
+          "title": "Version Range",
+          "type": "string"
+        },
+        "optional": {
+          "default": false,
+          "title": "Optional",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "plugin_id",
+        "version_range"
+      ],
+      "title": "PluginDependency",
+      "type": "object"
+    },
+    "PluginFrontendDeclaration": {
+      "additionalProperties": false,
+      "description": "Sandboxed frontend entrypoint bundled inside the plugin package.",
+      "properties": {
+        "entry": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_./-]*$",
+          "title": "Entry",
+          "type": "string"
+        },
+        "inline_assets": {
+          "default": false,
+          "title": "Inline Assets",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "entry"
+      ],
+      "title": "PluginFrontendDeclaration",
+      "type": "object"
+    },
+    "PluginNativeFrontendDeclaration": {
+      "additionalProperties": false,
+      "description": "Privileged host-native Vue/JavaScript/CSS bundle declaration.\n\nMerely declaring this bundle never grants native execution. The host only\nserves and activates it for an enabled installation with frontend.native.",
+      "properties": {
+        "entry": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_./-]*$",
+          "title": "Entry",
+          "type": "string"
+        },
+        "styles": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Styles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "entry"
+      ],
+      "title": "PluginNativeFrontendDeclaration",
+      "type": "object"
+    },
+    "PluginPwaDeclaration": {
+      "additionalProperties": false,
+      "description": "Non-executable install metadata; the host owns the worker and root routes.",
+      "properties": {
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "short_name": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Short Name",
+          "type": "string"
+        },
+        "theme_color": {
+          "default": "#0f1117",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Theme Color",
+          "type": "string"
+        },
+        "background_color": {
+          "default": "#0f1117",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Background Color",
+          "type": "string"
+        },
+        "manifest": {
+          "default": "pwa/manifest.webmanifest",
+          "pattern": "^pwa/manifest\\.webmanifest$",
+          "title": "Manifest",
+          "type": "string"
+        },
+        "icons": {
+          "default": [
+            "pwa/icon-192.png",
+            "pwa/icon-512.png"
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Icons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "short_name"
+      ],
+      "title": "PluginPwaDeclaration",
+      "type": "object"
+    },
+    "PluginUiDeclaration": {
+      "additionalProperties": false,
+      "description": "Declarative identifiers exposed to the native frontend.",
+      "properties": {
+        "settings": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Settings",
+          "type": "array"
+        },
+        "actions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Actions",
+          "type": "array"
+        },
+        "pages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "menus": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Menus",
+          "type": "array"
+        }
+      },
+      "title": "PluginUiDeclaration",
+      "type": "object"
+    },
+    "StorageRequirements": {
+      "additionalProperties": false,
+      "description": "Plugin-owned storage requirements; quotas never grant core DB access.",
+      "properties": {
+        "quota_mb": {
+          "anyOf": [
+            {
+              "maximum": 1048576,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quota Mb"
+        }
+      },
+      "title": "StorageRequirements",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Static plugin manifest validated without importing or executing the plugin.",
+  "properties": {
+    "manifest_version": {
+      "default": 1,
+      "maximum": 1,
+      "minimum": 1,
+      "title": "Manifest Version",
+      "type": "integer"
+    },
+    "plugin_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "title": "Plugin Id",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "maxLength": 2000,
+      "title": "Description",
+      "type": "string"
+    },
+    "icon": {
+      "anyOf": [
+        {
+          "maxLength": 2048,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Icon"
+    },
+    "tags": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "automatic_update": {
+      "default": true,
+      "title": "Automatic Update",
+      "type": "boolean"
+    },
+    "entrypoint": {
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*(?::[A-Za-z_][A-Za-z0-9_]*)?$",
+      "title": "Entrypoint",
+      "type": "string"
+    },
+    "sdk_version_range": {
+      "title": "Sdk Version Range",
+      "type": "string"
+    },
+    "application_version_range": {
+      "title": "Application Version Range",
+      "type": "string"
+    },
+    "capabilities": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CapabilityRef"
+      },
+      "title": "Capabilities",
+      "type": "array"
+    },
+    "permissions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PermissionDeclaration"
+      },
+      "title": "Permissions",
+      "type": "array"
+    },
+    "dependencies": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PluginDependency"
+      },
+      "title": "Dependencies",
+      "type": "array"
+    },
+    "ui": {
+      "$ref": "#/$defs/PluginUiDeclaration",
+      "default": {
+        "settings": [],
+        "actions": [],
+        "pages": [],
+        "menus": []
+      }
+    },
+    "storage": {
+      "$ref": "#/$defs/StorageRequirements",
+      "default": {
+        "quota_mb": null
+      }
+    },
+    "integrity": {
+      "$ref": "#/$defs/IntegrityMetadata"
+    },
+    "frontend": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PluginFrontendDeclaration"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "native_frontend": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PluginNativeFrontendDeclaration"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "backend_routes": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PluginBackendRoute"
+      },
+      "title": "Backend Routes",
+      "type": "array"
+    },
+    "pwa": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PluginPwaDeclaration"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "plugin_id",
+    "name",
+    "version",
+    "entrypoint",
+    "sdk_version_range",
+    "application_version_range",
+    "integrity"
+  ],
+  "title": "PluginManifest",
+  "type": "object"
+}
