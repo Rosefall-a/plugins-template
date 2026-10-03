@@ -1,0 +1,101 @@
+name: Plugin checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m ruff check .
+      - run: python tools/check_docs.py
+      - run: python tools/build_frontends.py --install
+      - run: python tools/check_source_layout.py
+      - run: python -m pytest
+      - run: python tools/build_packages.py
+      - run: python tools/verify_packages.py .validation/dist/*.utp
+      - run: python tools/validate_packages.py --full .validation/dist/*.utp
+      - run: python tools/distribution.py --root .validation --check-source
+      - name: Verify any retained published history
+        env:
+          BASELINE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -f list.json ]; then
+            python tools/distribution.py
+            if [ -n "$BASELINE_REF" ] && git cat-file -e "$BASELINE_REF:list.json" 2>/dev/null; then
+              python tools/distribution.py --baseline-ref "$BASELINE_REF"
+            fi
+          fi
+      - name: Verify with the actual public host contract
+        run: |
+          git clone --no-checkout https://github.com/Rosefall-a/unnamed_tracking_app.git .validation/host
+          git -C .validation/host checkout 83a6fadec8b725bf94bec4583faab48af2aa84dc
+          python tools/check_host_contract.py --host-root .validation/host
+      - name: Check real starter worker lifecycle on Linux
+        env:
+          # Explicit host-supported process mode, matching upstream acceptance.
+          # This verifies execution, not bubblewrap isolation or HTTP consent.
+          NONBUBBLE_ENV: 'true'
+        run: python tools/check_host_contract.py --host-root .validation/host --lifecycle
+      - name: Validation leaves maintained source clean
+        run: test -z "$(git status --porcelain --untracked-files=all)"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: plugin-packages-${{ github.sha }}
+          path: |
+            .validation/dist/*.utp
+            .validation/list.json
+            .validation/releases/*.json
+          include-hidden-files: true
+          if-no-files-found: error
+  authenticated-host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: plugin_template
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U test -d plugin_template"
+          --health-interval=5s --health-timeout=5s --health-retries=10
+    env:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: plugin_template
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: '5432'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Obtain pinned public host
+        run: |
+          git clone --no-checkout https://github.com/Rosefall-a/unnamed_tracking_app.git .validation/host
+          git -C .validation/host checkout 83a6fadec8b725bf94bec4583faab48af2aa84dc
+      - run: python -m pip install -r requirements-dev.txt -r .validation/host/src/backend/requirements.txt
+      - name: Fresh independent developer through authenticated installation and live grants
+        run: python tools/check_host_http.py --host-root .validation/host --work-root "${{ runner.temp }}/template-http"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: authenticated-plugin-conformance
+          path: ${{ runner.temp }}/template-http/http-conformance.json
+          if-no-files-found: error
