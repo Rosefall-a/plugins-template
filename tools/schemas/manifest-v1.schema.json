@@ -39,6 +39,7 @@
         "games",
         "games.read",
         "games.write",
+        "library.legacy.read",
         "media",
         "media.read",
         "media.write",
@@ -70,9 +71,16 @@
         "frontend.context.media",
         "frontend.context.documents",
         "frontend.settings",
+        "frontend.placement.sidebar",
+        "frontend.placement.settings.admin",
+        "frontend.placement.settings.account",
+        "frontend.placement.settings.preferences",
         "frontend.overlay",
         "frontend.dialog",
         "frontend.page.extend",
+        "frontend.home.widgets",
+        "frontend.themes",
+        "frontend.shortcuts",
         "frontend.page.replace.home",
         "frontend.page.replace.settings",
         "frontend.routes",
@@ -360,6 +368,65 @@
       "title": "PluginPwaDeclaration",
       "type": "object"
     },
+    "PluginScheduledTask": {
+      "additionalProperties": false,
+      "description": "One explicitly declared action that the host may schedule after consent.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Description",
+          "type": "string"
+        },
+        "action_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Action Id",
+          "type": "string"
+        },
+        "min_interval_minutes": {
+          "default": 5,
+          "maximum": 43200,
+          "minimum": 1,
+          "title": "Min Interval Minutes",
+          "type": "integer"
+        },
+        "max_interval_minutes": {
+          "default": 43200,
+          "maximum": 43200,
+          "minimum": 1,
+          "title": "Max Interval Minutes",
+          "type": "integer"
+        },
+        "default_interval_minutes": {
+          "default": 60,
+          "maximum": 43200,
+          "minimum": 1,
+          "title": "Default Interval Minutes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "action_id"
+      ],
+      "title": "PluginScheduledTask",
+      "type": "object"
+    },
     "PluginUiDeclaration": {
       "additionalProperties": false,
       "description": "Declarative identifiers exposed to the native frontend.",
@@ -448,6 +515,11 @@
     },
     "version": {
       "title": "Version",
+      "type": "string"
+    },
+    "api_contract_version": {
+      "default": "1.0.0",
+      "title": "Api Contract Version",
       "type": "string"
     },
     "description": {
@@ -579,6 +651,15 @@
         }
       ],
       "default": null
+    },
+    "scheduled_tasks": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PluginScheduledTask"
+      },
+      "maxItems": 32,
+      "title": "Scheduled Tasks",
+      "type": "array"
     }
   },
   "required": [

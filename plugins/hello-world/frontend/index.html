@@ -4,8 +4,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My greeting</title>
 <style>
-body { font: 1rem system-ui; color: #eee; background: #111; padding: 1rem; }
-input, button { font: inherit; padding: .5rem; }
+body { font: 1rem var(--ui-font-family, system-ui); color: var(--ui-text, #25262a); background: var(--ui-bg, #f5f5f6); padding: 1rem; }
+input, button { font: inherit; padding: .5rem; min-height: 44px; box-sizing: border-box; border: 1px solid var(--ui-border, #95969d); border-radius: var(--ui-radius-control, 8px); }
+input { color: var(--ui-text, #25262a); background: var(--ui-surface, #fff); max-width: 100%; }
+button { color: var(--ui-on-accent, #18191d); background: var(--ui-accent, #efab54); cursor: pointer; }
+button:disabled { cursor: wait; opacity: .65; }
+:focus-visible { outline: 2px solid var(--ui-accent, #c07018); outline-offset: 2px; }
+* { scrollbar-color: var(--ui-border, #95969d) var(--ui-bg, #f5f5f6); }
 label { display: block; margin-bottom: .5rem; }
 </style>
 <h1>My greeting</h1>

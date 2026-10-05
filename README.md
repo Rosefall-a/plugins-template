@@ -1,7 +1,7 @@
 # Make your own Unnamed Tracking plugin
 
 This is a community/developer template for **your independent plugin repository**:
-personal, private, experimental or published. It uses the real Plugin API v1 SDK,
+personal, private, experimental or published. It uses the real Plugin API v1.1 SDK,
 manifest validators, `.utp` builder and Ed25519 signing tools. It is not the
 official plugin catalogue. Your plugins do not become official by using it.
 
@@ -20,9 +20,14 @@ python tools/build_packages.py
 python tools/verify_packages.py .validation/dist/yourname.my-plugin-0.1.0.utp
 ```
 
+New plugins declare **1.1.0** in both manifest and UI documents and require SDK
+`>=1.1.0,<1.2.0`; they do not run on the old v1.0 host. Check the host's Plugin
+Manager platform information before installation. [The v1.1 guide](docs/V1_1.md)
+covers themed UI, native controls, settings placement, shortcuts and schedules.
+
 Edit `plugins/my-plugin/plugin.py`, `manifest.json`, `ui.json` and `release.json`.
 The deletable `hello-world` starter runs a real Python action through a small
-sandboxed frontend and displays its response. Remove it once
+sandboxed frontend, follows the host's live appearance, and displays its response. Remove it once
 you have your own plugin. Create more plugins under `plugins/` with unique IDs.
 
 Open **Settings → Plugins → Install plugin** in a plugin-enabled Unnamed Tracking
@@ -52,6 +57,10 @@ dist/, releases/       generated signed publication, once you publish
 Checks: `python -m ruff check .`, `python tools/build_frontends.py --install`,
 `python tools/check_source_layout.py`, `python -m pytest`, and
 `python tools/distribution.py --root .validation --check-source` after building.
+
+Every branch push runs checks and uploads **unsigned-dist** with installable
+`.utp` files. Download that workflow artifact, extract it and upload a package to
+the host; explicit unsigned consent and the normal permission review still apply.
 
 [Follow the developer guide](DEVELOPMENT.md) for the full first-plugin workflow,
 capabilities, secrets, UI, packaging, signing, installation and your own catalogue.

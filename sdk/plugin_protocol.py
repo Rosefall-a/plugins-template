@@ -4,6 +4,8 @@ import json
 import sys
 from typing import Any
 
+API_CONTRACT_VERSION = "1.1.0"
+
 
 def request(method: str, capability: str, payload: dict[str, Any]) -> dict[str, Any]:
     print(

@@ -1,5 +1,21 @@
 # Tooling provenance and deliberate comparison
 
+## Current v1.1 synchronization (5 October 2026)
+
+SDK and exported schemas are synchronized with companion revision
+`0f3483c6d35790ffddca99b6e40d065b90674006`. The public validator's current-contract
+checks are retained for matching API declarations, shortcuts and host-managed
+tasks; the template's independent catalogue/signing adaptations remain intact.
+No official implementation, publisher identity, runtime or catalogue is copied.
+
+Both blocking CI jobs now use public host revision
+`6bae984ce7590903e9144e4301ffa1b0fe65c809`, whose complete seven-workflow CI passes.
+The starter and generator explicitly target v1.1, exclude old hosts, and consume
+the public appearance bridge. Branch checks publish `unsigned-dist`; signed
+publication remains manual with developer-owned credentials.
+
+The original provenance and adaptations below remain relevant history.
+
 Inspected on 3 October 2026:
 
 - Source: [plugin repository](https://github.com/Rosefall-a/unnamed_tracking_app_plugins),

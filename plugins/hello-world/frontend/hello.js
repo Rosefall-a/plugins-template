@@ -2,6 +2,16 @@
 const form = document.getElementById("greeting");
 const output = document.getElementById("result");
 const button = form.querySelector("button");
+const themeRequest = "theme-" + Array.from(crypto.getRandomValues(new Uint32Array(4))).join("-");
+function appearance(value) {
+  if (!value || typeof value.tokens !== "object" || value.tokens === null) return;
+  for (const [key, token] of Object.entries(value.tokens)) {
+    if (/^--ui-[a-z0-9-]+$/.test(key) && typeof token === "string" && token.length <= 256)
+      document.documentElement.style.setProperty(key, token);
+  }
+  document.documentElement.style.colorScheme = value.mode === "dark" ? "dark" : "light";
+}
+parent.postMessage({type: "plugin-api-request", requestId: themeRequest, method: "plugin.theme", payload: {}}, "*");
 let pending;
 let timer;
 function finish(message) {
@@ -14,7 +24,7 @@ button.addEventListener("click", () => {
   if (pending) return;
   pending = Array.from(crypto.getRandomValues(new Uint32Array(4))).join("-");
   button.disabled = true;
-  output.textContent = "Greeting…";
+  output.textContent = "Greetingâ€¦";
   timer = setTimeout(() => finish("The host did not respond. Check plugin diagnostics."), 10000);
   parent.postMessage({type: "plugin-api-request", requestId: pending,
     method: "plugin.run-action", payload: {actionId: "greet",
@@ -22,7 +32,10 @@ button.addEventListener("click", () => {
 });
 window.addEventListener("message", (event) => {
   const data = event.data;
-  if (event.source !== parent || !pending || !data ||
+  if (event.source !== parent || !data) return;
+  if (data.type === "plugin-appearance-changed") { appearance(data.appearance); return; }
+  if (data.type === "plugin-api-response" && data.requestId === themeRequest) { appearance(data.result); return; }
+  if (!pending ||
       data.type !== "plugin-api-response" || data.requestId !== pending) return;
   finish(typeof data.error === "string" ? data.error :
     typeof data.result?.message === "string" ? data.result.message : "Action completed.");
