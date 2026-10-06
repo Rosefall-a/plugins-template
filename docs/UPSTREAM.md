@@ -1,6 +1,18 @@
 # Tooling provenance and deliberate comparison
 
-## Current v1.1 synchronization (5 October 2026)
+## Gateway error helper synchronization (6 October 2026)
+
+The public SDK helper is synchronized verbatim with companion revision
+`f858db6ce1a23c829d995576cff95daa833a3cb2`. `GatewayRequestError` remains a
+`RuntimeError` and exposes an optional public `code`; string-only older responses
+retain `code=None`. Protocol regression tests exercise successful serialization,
+typed failures and older error responses. No wire version, schema, permission or
+signature contract changes. The SDK is bundled independently in each package.
+
+The current exported-schema and tooling provenance remains the synchronization
+record below; only the public SDK helper and its contract tests are updated here.
+
+## v1.1 synchronization (5 October 2026)
 
 SDK and exported schemas are synchronized with companion revision
 `0f3483c6d35790ffddca99b6e40d065b90674006`. The public validator's current-contract

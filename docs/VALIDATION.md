@@ -1,5 +1,20 @@
 # Template validation evidence
 
+## Gateway helper update: 6 October 2026
+
+The synchronized SDK and its response-contract tests pass all **23 template
+tests**, including typed public failures, older string-only errors and successful
+serialization. Full repository Ruff passes; the touched SDK/test modules score
+**10.00/10** with the host's unchanged Pylint configuration.
+
+Guide links, frontend orchestration, source checks, build, full package
+validation, signature/integrity verification and catalogue/source consistency
+pass. Actual current host `219b13de` models/verifier install and uninstall the
+independent package; Linux process-mode acceptance passes ready/action,
+disable/re-enable, version update and retained storage. The template's existing
+authenticated PostgreSQL CI remains enabled at its pinned public host revision.
+No product implementations, official signers or runtime internals are copied.
+
 ## v1.1 update: 5 October 2026
 
 The current SDK/schema/generator update passes **18 tests**, including existing
