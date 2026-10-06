@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import json
 import ast
+import json
 import re
 import sys
 import zipfile
@@ -42,7 +42,9 @@ def validate_package(path: Path, *, full: bool = False) -> None:
         files = {name: archive.read("payload/" + name) for name in payload_names}
         names = archive.namelist()
         if len(names) != len(set(names)) or any(
-            "\\" in name or name.startswith("/") or any(part in {"", ".", ".."} or ":" in part for part in name.rstrip("/").split("/"))
+            "\\" in name
+            or name.startswith("/")
+            or any(part in {"", ".", ".."} or ":" in part for part in name.rstrip("/").split("/"))
             for name in names
         ):
             raise ValueError(f"{path.name}: duplicate or unsafe archive paths")
@@ -84,23 +86,14 @@ def validate_package(path: Path, *, full: bool = False) -> None:
             raise ValueError(f"{path.name}: backend route scope or path is invalid")
         if scope == "plugin" and route_path.startswith("/"):
             raise ValueError(f"{path.name}: plugin backend route path must be relative")
-        if (
-            scope == "plugin"
-            and route_path.split("/", 1)[0] in RESERVED_PLUGIN_ROUTE_ROOTS
-        ):
-            raise ValueError(
-                f"{path.name}: backend route conflicts with plugin management"
-            )
+        if scope == "plugin" and route_path.split("/", 1)[0] in RESERVED_PLUGIN_ROUTE_ROOTS:
+            raise ValueError(f"{path.name}: backend route conflicts with plugin management")
         if scope == "host" and not route_path.startswith("/api/"):
-            raise ValueError(
-                f"{path.name}: host backend route path must start with /api/"
-            )
+            raise ValueError(f"{path.name}: host backend route path must start with /api/")
         if scope == "host" and route_path.startswith("/api/plugins/"):
             raise ValueError(f"{path.name}: host route cannot claim plugin management")
         route_parts = route_path.removeprefix("/api/").split("/")
-        if not route_parts or any(
-            not ROUTE_SEGMENT.fullmatch(part) for part in route_parts
-        ):
+        if not route_parts or any(not ROUTE_SEGMENT.fullmatch(part) for part in route_parts):
             raise ValueError(f"{path.name}: backend route path is invalid")
         parameters = [part for part in route_parts if part.startswith("{")]
         if len(parameters) != len(set(parameters)):
@@ -114,9 +107,7 @@ def validate_package(path: Path, *, full: bool = False) -> None:
             raise ValueError(f"{path.name}: backend route methods are invalid")
         if not isinstance(handler, str) or not ROUTE_HANDLER.fullmatch(handler):
             raise ValueError(f"{path.name}: backend route handler is invalid")
-        required = (
-            "backend.routes.plugin" if scope == "plugin" else "backend.routes.host"
-        )
+        required = "backend.routes.plugin" if scope == "plugin" else "backend.routes.host"
         if route.get("authorization", "authenticated") not in {"authenticated", "admin"}:
             raise ValueError(f"{path.name}: backend route authorization is invalid")
         capability_names = {name for name, version in capabilities if version == 1}
@@ -155,7 +146,9 @@ def validate_package(path: Path, *, full: bool = False) -> None:
     if pwa is not None:
         if not isinstance(pwa, dict) or ("frontend.pwa", 1) not in capabilities:
             raise ValueError("PWA requires frontend.pwa v1")
-        granted = {(p["capability"]["name"], p["capability"]["version"]) for p in manifest["permissions"]}
+        granted = {
+            (p["capability"]["name"], p["capability"]["version"]) for p in manifest["permissions"]
+        }
         if ("frontend.pwa", 1) not in granted:
             raise ValueError("PWA requires an explicit permission declaration")
         declaration_path = pwa.get("manifest", "pwa/manifest.webmanifest")
@@ -165,13 +158,23 @@ def validate_package(path: Path, *, full: bool = False) -> None:
         for field in ("name", "short_name", "theme_color", "background_color"):
             if webmanifest.get(field) != pwa.get(field, "#0f1117"):
                 raise ValueError("PWA metadata does not match declaration")
-        for field, value in {"id": "/", "scope": "/", "start_url": "/?pwa=1", "display": "standalone"}.items():
+        for field, value in {
+            "id": "/",
+            "scope": "/",
+            "start_url": "/?pwa=1",
+            "display": "standalone",
+        }.items():
             if webmanifest.get(field) != value:
                 raise ValueError("PWA must launch the complete root application")
         for size in (192, 512):
             data = files.get(f"pwa/icon-{size}.png", b"")
-            if (len(data) > 256 * 1024 or len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n"
-                    or int.from_bytes(data[16:20], "big") != size or int.from_bytes(data[20:24], "big") != size):
+            if (
+                len(data) > 256 * 1024
+                or len(data) < 24
+                or data[:8] != b"\x89PNG\r\n\x1a\n"
+                or int.from_bytes(data[16:20], "big") != size
+                or int.from_bytes(data[20:24], "big") != size
+            ):
                 raise ValueError("PWA icon is missing, oversized or has invalid dimensions")
 
     frontend = manifest.get("frontend")
@@ -182,20 +185,28 @@ def validate_package(path: Path, *, full: bool = False) -> None:
         if not isinstance(entry, str) or not entry:
             raise ValueError(f"{path.name}: frontend.entry must be a non-empty string")
         if entry not in payload_names:
-            raise ValueError(f"{path.name}: frontend.entry {entry!r} is not present in the package payload")
+            raise ValueError(
+                f"{path.name}: frontend.entry {entry!r} is not present in the package payload"
+            )
     if full:
         validate_current_contract(manifest, files)
 
 
 def validate_current_contract(manifest: dict, files: dict[str, bytes]) -> None:
+    """Validate current source schemas, handler references and requested UI permissions."""
     from jsonschema import Draft202012Validator
+
     try:
         from .distribution import validate_metadata, version_key
     except ImportError:
         from distribution import validate_metadata, version_key
     schemas = Path(__file__).parent / "schemas"
-    Draft202012Validator(json.loads((schemas / "manifest-v1.schema.json").read_text())).validate(manifest)
+    Draft202012Validator(json.loads((schemas / "manifest-v1.schema.json").read_text())).validate(
+        manifest
+    )
     version_key(manifest["version"])
+    contract = manifest.get("api_contract_version", "1.0.0")
+    contract_version = version_key(contract)
     ranges = [manifest[field] for field in ("sdk_version_range", "application_version_range")]
     ranges.extend(d["version_range"] for d in manifest.get("dependencies", []))
     for value in ranges:
@@ -207,7 +218,10 @@ def validate_current_contract(manifest: dict, files: dict[str, bytes]) -> None:
                 continue
             if re.fullmatch(r"(?:>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+)*\.(?:x|\*)", part):
                 continue
-            if not re.fullmatch(r"(?:\^|~|>=|<=|>|<|=)?(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", part):
+            if not re.fullmatch(
+                r"(?:\^|~|>=|<=|>|<|=)?(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)",
+                part,
+            ):
                 raise ValueError("invalid host version range")
     for field, identifier in (("capabilities", "name"), ("dependencies", "plugin_id")):
         values = [item[identifier] for item in manifest.get(field, [])]
@@ -220,7 +234,9 @@ def validate_current_contract(manifest: dict, files: dict[str, bytes]) -> None:
     validate_metadata(metadata, packaged=True)
     if metadata["version"] != manifest["version"] or type(metadata["automatic_update"]) is not bool:
         raise ValueError("packaged release version/policy mismatch")
-    if not files.get("README.md", b"").strip() or (metadata.get("icon") and metadata["icon"] not in files):
+    if not files.get("README.md", b"").strip() or (
+        metadata.get("icon") and metadata["icon"] not in files
+    ):
         raise ValueError("README/icon missing from package")
 
     def handler_exists(handler: str) -> None:
@@ -229,17 +245,23 @@ def validate_current_contract(manifest: dict, files: dict[str, bytes]) -> None:
         if filename not in files:
             raise ValueError(f"handler module is missing: {handler}")
         tree = ast.parse(files[filename])
-        if not any(isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == (function or "main") for node in tree.body):
+        if not any(
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == (function or "main")
+            for node in tree.body
+        ):
             raise ValueError(f"handler function is missing: {handler}")
 
     handler_exists(manifest["entrypoint"])
     for route in manifest.get("backend_routes", []):
         handler_exists(route["handler"])
     if "ui.json" not in files:
-        if any(manifest.get("ui", {}).values()):
+        if any(manifest.get("ui", {}).values()) or manifest.get("scheduled_tasks"):
             raise ValueError("declared UI contributions require ui.json")
         return
     document = json.loads(files["ui.json"])
+    if document.get("api_contract_version", "1.0.0") != contract:
+        raise ValueError("UI and manifest API contracts must match")
     Draft202012Validator(json.loads((schemas / "ui-v1.schema.json").read_text())).validate(document)
     if document["plugin_id"] != manifest["plugin_id"]:
         raise ValueError("UI plugin identity mismatch")
@@ -252,7 +274,9 @@ def validate_current_contract(manifest: dict, files: dict[str, bytes]) -> None:
             raise ValueError("actions require executable handlers")
         handler_exists(action["handler"])
         ref = action.get("capability")
-        if ref and (ref["name"], ref["version"]) not in {(c["name"], c["version"]) for c in manifest["capabilities"]}:
+        if ref and (ref["name"], ref["version"]) not in {
+            (c["name"], c["version"]) for c in manifest["capabilities"]
+        }:
             raise ValueError("UI action capability is undeclared")
     for page in document.get("pages", []):
         for field in ("settings", "actions", "tables", "dialogs"):
@@ -260,7 +284,11 @@ def validate_current_contract(manifest: dict, files: dict[str, bytes]) -> None:
                 raise ValueError(f"page refers to missing {field}")
     declared = {c["name"] for c in manifest["capabilities"]}
     granted = {p["capability"]["name"] for p in manifest["permissions"]}
+    validate_scheduled_tasks(manifest, document, contract_version, granted)
     required = set()
+    if document.get("shortcuts"):
+        required.add("frontend.shortcuts")
+        validate_shortcut_targets(document, contract_version)
     if any(p.get("navigation", {}).get("sidebar") for p in document.get("pages", [])):
         required.add("frontend.navigation.main")
     if document.get("document_readers"):
@@ -268,10 +296,74 @@ def validate_current_contract(manifest: dict, files: dict[str, bytes]) -> None:
         page_ids = {p["id"] for p in document.get("pages", [])}
         if any(reader["page_id"] not in page_ids for reader in document["document_readers"]):
             raise ValueError("document reader refers to a missing page")
-    if any(not field.get("secret") for section in document.get("settings", []) for field in section.get("fields", [])):
+    if any(
+        not field.get("secret")
+        for section in document.get("settings", [])
+        for field in section.get("fields", [])
+    ):
         required.add("plugin.settings")
     if not required <= declared & granted:
         raise ValueError("UI contributions require declared frontend/settings permissions")
+
+
+def validate_scheduled_tasks(
+    manifest: dict, document: dict, contract_version: tuple[int, ...], granted: set[str]
+) -> None:
+    """Match bounded host schedules to non-confirmed actions and explicit background consent."""
+    tasks = manifest.get("scheduled_tasks", [])
+    if not tasks:
+        return
+    if contract_version < (1, 1, 0) or "tasks.background" not in granted:
+        raise ValueError("scheduled tasks require v1.1 and explicit tasks.background permission")
+    identifiers = [task["id"] for task in tasks]
+    if len(identifiers) != len(set(identifiers)):
+        raise ValueError("duplicate scheduled tasks")
+    actions = {action["id"]: action for action in document.get("actions", [])}
+    for task in tasks:
+        action = actions.get(task["action_id"])
+        if action is None or not action.get("handler") or action.get("confirmation") is not None:
+            raise ValueError("scheduled task action must exist and have no confirmation")
+        if (
+            not task.get("min_interval_minutes", 5)
+            <= task.get("default_interval_minutes", 60)
+            <= task.get("max_interval_minutes", 43_200)
+        ):
+            raise ValueError("scheduled task interval is outside its bounds")
+
+
+def validate_shortcut_targets(document: dict, contract_version: tuple[int, ...]) -> None:
+    """Validate consumer references without importing the host implementation."""
+    if contract_version < (1, 1, 0):
+        raise ValueError("shortcuts require Plugin API v1.1")
+    shortcuts = document["shortcuts"]
+    identifiers = [item["id"] for item in shortcuts]
+    if len(identifiers) != len(set(identifiers)):
+        raise ValueError("duplicate shortcuts")
+    targets = {
+        field: {item["id"] for item in document.get(collection, [])}
+        for field, collection in (
+            ("page_id", "pages"),
+            ("route_id", "routes"),
+            ("when_route_id", "routes"),
+            ("action_id", "actions"),
+        )
+    }
+    for shortcut in shortcuts:
+        if (
+            sum(
+                bool(shortcut.get(field))
+                for field in ("page_id", "route_id", "action_id", "control")
+            )
+            != 1
+        ):
+            raise ValueError("shortcut must target exactly one destination or control")
+        if shortcut.get("control") and not shortcut.get("when_route_id"):
+            raise ValueError("shortcut controls require a declared route scope")
+        if any(
+            shortcut.get(field) and shortcut[field] not in allowed
+            for field, allowed in targets.items()
+        ):
+            raise ValueError("shortcut refers to an undeclared destination or scope")
 
 
 def main() -> None:

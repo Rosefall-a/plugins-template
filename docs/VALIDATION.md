@@ -1,5 +1,40 @@
 # Template validation evidence
 
+## Gateway helper update: 6 October 2026
+
+The synchronized SDK and its response-contract tests pass all **23 template
+tests**, including typed public failures, older string-only errors and successful
+serialization. Full repository Ruff passes; the touched SDK/test modules score
+**10.00/10** with the host's unchanged Pylint configuration.
+
+Guide links, frontend orchestration, source checks, build, full package
+validation, signature/integrity verification and catalogue/source consistency
+pass. Actual current host `219b13de` models/verifier install and uninstall the
+independent package; Linux process-mode acceptance passes ready/action,
+disable/re-enable, version update and retained storage. The template's existing
+authenticated PostgreSQL CI remains enabled at its pinned public host revision.
+No product implementations, official signers or runtime internals are copied.
+
+## v1.1 update: 5 October 2026
+
+The current SDK/schema/generator update passes **18 tests**, including existing
+signed release immutability, new matching contract checks, explicit background
+task consent/real handlers, shortcut permission/target validation and generated
+starter asset consistency. The starter's JavaScript tests verify live light/dark
+tokens, ignored foreign-frame messages, correlation, denial and timeouts.
+
+Ruff, guide links, frontend orchestration, source checks, build, full package
+validation, signatures and catalogue consistency pass. The actual v1.1 host
+verifier installs/uninstalls the package, and Linux process-mode acceptance
+passes ready/action, disable/re-enable, update and retained storage. A fresh
+PostgreSQL-backed authenticated run passes unsigned consent, developer-owned
+signatures, live permission staging/approval, non-returned secrets, update and
+uninstall. These checks use the public host at the revision in
+[UPSTREAM.md](UPSTREAM.md); they do not establish old-host compatibility or a
+production isolation guarantee.
+
+Earlier evidence follows as historical context.
+
 Validation date: 3 October 2026. Revisions and architectural comparison are in
 [UPSTREAM.md](UPSTREAM.md). Commands are in [DEVELOPMENT.md](../DEVELOPMENT.md).
 

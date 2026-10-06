@@ -1,11 +1,25 @@
+"""Plugin API v1 line protocol and public response helpers."""
+
 from __future__ import annotations
 
 import json
 import sys
 from typing import Any
 
+API_CONTRACT_VERSION = "1.1.0"
+
+
+class GatewayRequestError(RuntimeError):
+    """Preserve optional public error codes while retaining RuntimeError compatibility."""
+
+    def __init__(self, message: str, detail: Any = None) -> None:
+        super().__init__(message)
+        code = detail.get("code") if isinstance(detail, dict) else None
+        self.code: str | None = code if isinstance(code, str) else None
+
 
 def request(method: str, capability: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Send a mediated request and preserve the host's public failure classification."""
     print(
         json.dumps(
             {
@@ -22,7 +36,7 @@ def request(method: str, capability: str, payload: dict[str, Any]) -> dict[str, 
         raise RuntimeError("plugin gateway closed the connection")
     response = json.loads(line)
     if response.get("error"):
-        raise RuntimeError(str(response["error"]))
+        raise GatewayRequestError(str(response["error"]), response.get("error_detail"))
     return dict(response.get("payload", {}))
 
 

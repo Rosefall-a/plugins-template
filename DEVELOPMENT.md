@@ -1,7 +1,7 @@
 # Develop plugins in your own repository
 
 This checkout is yours. Use it for personal, private, experimental or public
-third-party plugins. It includes the actual Plugin API v1 SDK and package tools;
+third-party plugins. It includes the actual Plugin API v1.1 SDK and package tools;
 you do not need the upstream plugin repository to build or publish. It does not
 include official plugins, maintained examples, official signing keys or a wiki.
 
@@ -71,6 +71,10 @@ branch differs from the remote's default (Actions otherwise uses `main`).
    application compatibility, `capabilities`, `permissions`, `dependencies`, UI
    IDs and storage quota accurate. Source integrity uses 64 zeroes and null
    signature/key ID; the builder computes real integrity in the package.
+   Both manifest and UI declare `api_contract_version: "1.1.0"`. The generated
+   SDK range `>=1.1.0,<1.2.0` excludes old hosts. Adapting source with `--from`
+   updates these declarations; review its behavior and validate the real plugin,
+   because a version marker alone does not migrate an old interface.
 5. Start with no optional capabilities. Add only what your implementation uses,
    with matching permission references and specific rationales. See section 3.
 6. Implement the plugin in `plugin.py`. The starter sends `lifecycle.ready` using
@@ -245,6 +249,10 @@ data; explicit purge/uninstall removes it. Design data migrations to remain
 readable by a rollback version; rolling code back does not roll data back.
 
 ## 5. Add UI and backend APIs
+
+Follow [the v1.1 integration guide](docs/V1_1.md) for native shared controls,
+live theme updates, scoped settings/sidebar placement, shortcuts and schedules.
+The exported JSON schemas are the exact machine-readable contracts.
 
 The starter uses a small sandboxed frontend to display the result of its Python
 action. Declarative buttons dispatch actions, but the current host does not
